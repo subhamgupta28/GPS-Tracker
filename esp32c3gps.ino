@@ -7,10 +7,10 @@
 #include "TimeLib.h"
 
 
-#define FIREBASE_HOST "esp32-e513c-default-rtdb.firebaseio.com"   //Change to your Firebase RTDB project ID e.g. Your_Project_ID.firebaseio.com
-#define FIREBASE_AUTH "wpwc1VOmlcsPsBm0mcoL9UyrEZYNvDSpqULlUBKH"  //Change to your Firebase RTDB secret password
-#define WIFI_SSID "Net2.4"
-#define WIFI_PASSWORD "12345678"
+#define FIREBASE_HOST "<-------PASTE-HERE------->"   //Change to your Firebase RTDB project ID e.g. Your_Project_ID.firebaseio.com
+#define FIREBASE_AUTH "<-------PASTE-HERE------->"  //Change to your Firebase RTDB secret password
+#define WIFI_SSID "WIFI NAME"
+#define WIFI_PASSWORD "WIFI PASSWORD"
 
 #define RXD2 5
 #define TXD2 2
