@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv='content-Type' content='text/html; charset=UTF-8' />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Tracking Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.4.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        tbody {
+            background-color: #333333;
+            color: #ffffff;
+            border-radius: 10px;
+        }
+
+        td,
+        th {
+            border: 2px solid #212121;
+            text-align: left;
+            padding: 8px;
+            min-width: 80px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #444444;
+        }
+    </style>
+</head>
+
+<body>
+    
+    <div style="margin: 8px;">
+        <div id="map" style="height: 80vh; margin: 4px; border-radius: 10px;"></div>
+        <table>
+            <tbody>
+                <tr>
+                    <th>Satellite</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Speed</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Altitude</th>
+                    <th>HDOP</th>
+                    <th>Fix</th>
+                </tr>
+                <tr>
+                    <td><span id="sat"></span></td>
+                    <td><span id="lat"></span></td>
+                    <td><span id="long"></span></td>
+                    <td><span id="speed"></span></td>
+                    <td><span id="date"></span></td>
+                    <td><span id="time"></span></td>
+                    <td><span id="alt"></span></td>
+                    <td><span id="hdop"></span></td>
+                    <td><span id="fix"></span></td>
+                </tr>
+            </tbody>
+
+        </table>
+
+        <button onclick="showHist()" style="position: absolute;">Show Popup</button>
+
+    </div>
+
+
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBs1gGkK2wMvCcBAO_mUc4VvNzfUwwQ6BA",
+            authDomain: "esp32-e513c.firebaseapp.com",
+            databaseURL: "https://esp32-e513c-default-rtdb.firebaseio.com",
+            projectId: "esp32-e513c",
+            storageBucket: "esp32-e513c.appspot.com",
+            messagingSenderId: "74835093403",
+            appId: "1:74835093403:web:473205fa4a7585d2f1e33e",
+            measurementId: "G-FF6Q0TXLRY"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+
+        var coordinates = [
+            [20.906643, 82.514075],
+        ];
+
+        var mymap = L.map('map').setView([20.906643, 82.514075], 11);
+        // L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        //     maxZoom: 20,
+        //     subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        // }).addTo(mymap);
+
+        // L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        //     maxZoom: 20,
+        //     subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        // }).addTo(mymap);
+
+        // L.tileLayer('https://{s}.google.com/vt/lyrs=m@221097413,traffic&x={x}&y={y}&z={z}', {
+        //     maxZoom: 20,
+        //     minZoom: 2,
+        //     subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        // }).addTo(mymap);
+
+        L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        }).addTo(mymap);
+        // var marker = L.marker([20.906643, 82.5140759]).addTo(mymap);
+
+        var rtdb = firebase.database();
+        var locationRef = rtdb.ref('GPS');
+        var historyRef = rtdb.ref('history');
+        var hist = {};
+
+        historyRef.on('value', function (snapshot) {
+            var location = snapshot.toJSON();
+            console.log("his", location);
+            hist = location;
+        });
+
+        // Create a real-time listener for child added events
+        locationRef.on('value', function (snapshot) {
+            var location = snapshot.toJSON();
+
+            console.log("New location data:");
+            getPosition(location.LAT, location.LONG);
+
+            document.getElementById("sat").innerHTML = location.STATS;
+            document.getElementById("lat").innerHTML = location.LAT;
+            document.getElementById("long").innerHTML = location.LONG;
+            document.getElementById("speed").innerHTML = location.SPEED;
+            document.getElementById("date").innerHTML = location.DATE;
+            document.getElementById("time").innerHTML = Date(parseInt(location.HOUR));
+            document.getElementById("alt").innerHTML = location.ALT;
+            document.getElementById("fix").innerHTML = location.FIX;
+            document.getElementById("hdop").innerHTML = location.HDOP;
+        
+            // coordinates.push([location.LAT, location.LONG]);
+
+            
+
+            // Add a marker to the map
+
+        });
+        function showHist() {
+            for (const key in hist) {
+                if (hist.hasOwnProperty(key)) {
+                    const value = hist[key];
+                    const [latStr, lonStr] = value.split(',');
+
+                    coordinates.push([latStr, lonStr]);
+                }
+            }
+
+
+            var polyline = L.polyline(coordinates, { color: 'blue' }).addTo(mymap);
+            mymap.fitBounds(polyline.getBounds());
+        }
+
+
+        var marker, circle;
+
+        function getPosition(lat, long) {
+            var accuracy = 20;
+            console.log(lat, long);
+
+            if (marker) {
+                mymap.removeLayer(marker)
+            }
+
+            if (circle) {
+                mymap.removeLayer(circle)
+            }
+
+            marker = L.marker([lat, long])
+            circle = L.circle([lat, long], { radius: accuracy })
+
+            var featureGroup = L.featureGroup([marker, circle]).addTo(mymap)
+
+            mymap.fitBounds(featureGroup.getBounds())
+
+            console.log("Your coordinate is: Lat: " + lat + " Long: " + long + " Accuracy: " + accuracy)
+        }
+
+    </script>
+</body>
+
+</html>
