@@ -86,16 +86,15 @@
 
 
     <script>
-        // THIS CAN BE FOUND ON THE FIREBASE PROJECT'S SETTING PAGE. REPLACE IT WITH YOUR OWN PROJECTS CREDS.
         const firebaseConfig = {
-            apiKey: "<-------PASTE-HERE------->",
-            authDomain: "<-------PASTE-HERE------->",
-            databaseURL: "<-------PASTE-HERE------->",
-            projectId: "<-------PASTE-HERE------->",
-            storageBucket: "<-------PASTE-HERE------->",
-            messagingSenderId: "<-------PASTE-HERE------->",
-            appId: "<-------PASTE-HERE------->",
-            measurementId: "<-------PASTE-HERE------->"
+            apiKey: "AIzaSyBs1gGkK2wMvCcBAO_mUc4VvNzfUwwQ6BA",
+            authDomain: "esp32-e513c.firebaseapp.com",
+            databaseURL: "https://esp32-e513c-default-rtdb.firebaseio.com",
+            projectId: "esp32-e513c",
+            storageBucket: "esp32-e513c.appspot.com",
+            messagingSenderId: "74835093403",
+            appId: "1:74835093403:web:473205fa4a7585d2f1e33e",
+            measurementId: "G-FF6Q0TXLRY"
         };
 
         // Initialize Firebase
@@ -146,7 +145,7 @@
             console.log("New location data:");
             getPosition(location.LAT, location.LONG);
 
-            document.getElementById("sat").innerHTML = location.STATS;
+            document.getElementById("sat").innerHTML = location.SATS;
             document.getElementById("lat").innerHTML = location.LAT;
             document.getElementById("long").innerHTML = location.LONG;
             document.getElementById("speed").innerHTML = location.SPEED;
