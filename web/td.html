@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        h2 {
+            display: flex;
+            justify-content: center;
+            color: #ffffff;
+        }
+
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        tbody {
+            background-color: #333333;
+            color: #ffffff;
+        }
+
+        td,
+        th {
+            border: 2px solid #212121;
+            text-align: left;
+            padding: 8px;
+            min-width: 140px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #444444;
+        }
+
+        button {
+            width: 100%;
+            height: 40px;
+        }
+
+        input {
+            width: 100%;
+            padding: 0px;
+            color: #ffffff;
+            background-color: #444444;
+            border: 1px solid #212121;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #ffffff;
+        }
+
+        #map {
+            height: 240px;
+            width: 536px;
+            margin: 4px auto;
+            /* Center horizontally */
+            border-radius: 10px;
+        }
+
+        .text {
+            display: flex;
+            justify-content: center;
+            padding-top: 10px;
+        }
+    </style>
+    <title>Display Control</title>
+    <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' />
+    <link rel='stylesheet' href='https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css' />
+    <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+    <script src='https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js'></script>
+    <script src='https://www.gstatic.com/firebasejs/9.4.0/firebase-app-compat.js'></script>
+    <script src='https://www.gstatic.com/firebasejs/9.4.0/firebase-database-compat.js'></script>
+    <script src='https://unpkg.com/dom-to-image@2.6.0/dist/dom-to-image.min.js'></script>
+</head>
+
+<body>
+    <h2>Amoled Display</h2>
+    <table>
+        <tbody>
+            <form action='/set' method='get'>
+                <tr>
+                    <th>Actions</th>
+                    <th>Inputs</th>
+                </tr>
+                <tr>
+                    <td>Modes</td>
+                    <td><input type='number' name='tsk' min='1' max='25'></td>
+                </tr>
+                <tr>
+                    <td>Brightness</td>
+                    <td><input type='number' name='bht' min='1' max='255'></td>
+                </tr>
+                <tr>
+                    <td colspan='2'><button type='submit'>Apply changes</button></td>
+                </tr>
+            </form>
+            <tr>
+                <td colspan='2'><button id='sleep' name='sleep'>Sleep</button></td>
+            </tr>
+            <tr>
+                <td colspan='2'><button id='reset' name='sleep'>Delete Memory</button></td>
+            </tr>
+        </tbody>
+    </table>
+    <span id='text' class='text'></span>
+    <div id='map'></div>
+    <script>
+
+        const firebaseConfig = {
+            apiKey: 'AIzaSyBs1gGkK2wMvCcBAO_mUc4VvNzfUwwQ6BA',
+            authDomain: 'esp32-e513c.firebaseapp.com',
+            databaseURL: 'https://esp32-e513c-default-rtdb.firebaseio.com',
+            projectId: 'esp32-e513c',
+            storageBucket: 'esp32-e513c.appspot.com',
+            messagingSenderId: '74835093403',
+            appId: '1:74835093403:web:473205fa4a7585d2f1e33e',
+            measurementId: 'G-FF6Q0TXLRY'
+        };
+        const app = firebase.initializeApp(firebaseConfig);
+        var rtdb = firebase.database();
+        var locationRef = rtdb.ref('GPS1');
+        var marker, circle;
+        const map = L.map('map', {
+            attributionControl: false,
+            zoomControl: false,
+            fadeAnimation: false,
+            zoomAnimation: false
+        }).setView([17.403016, 78.330997], 16);
+
+        const gmap = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            maxZoom: 18,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        }).addTo(map);
+
+        locationRef.on('value', function (snapshot) {
+            var location = snapshot.toJSON();
+            getPosition(location.LAT, location.LONG);
+        });
+
+        function getPosition(lat, long) {
+            var accuracy = 5;
+            console.log(lat, long);
+
+            if (marker) {
+                map.removeLayer(marker)
+            }
+
+            if (circle) {
+                map.removeLayer(circle)
+            }
+
+            marker = L.marker([lat, long])
+            circle = L.circle([lat, long], {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.5,
+                radius: accuracy
+            })
+
+            var featureGroup = L.featureGroup([marker, circle]).addTo(map)
+
+            map.fitBounds(featureGroup.getBounds())
+            createMapImage();
+        }
+
+        var BASE64_MARKER = ';base64,';
+
+        function convertDataURIToBinary(dataURI) {
+            var base64Index = dataURI.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
+            var base64 = dataURI.substring(base64Index);
+            var raw = window.atob(base64);
+            var rawLength = raw.length;
+            var array = new Uint8Array(new ArrayBuffer(rawLength));
+
+            for (i = 0; i < rawLength; i++) {
+                array[i] = raw.charCodeAt(i);
+            }
+            return array;
+        }
+        const socket = new WebSocket('ws://'+window.location.hostname+':8888');
+        const createMapImage = async () => {
+            const width = 536;
+            const height = 240;
+            var map = document.getElementById('map');
+            // await new Promise((resolve) => gmap.on('load', () => resolve()));
+            const dataURL = await domtoimage.toJpeg(map, { width, height });
+            console.log("dataURL");
+            var data = await fetch(dataURL)
+            data = await data.blob()
+            const formData = new FormData();
+            formData.append('file', data);
+            console.log(data)
+
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(data);
+            }
+
+
+            // sendCommand('/set?map=' + data);
+        };
+
+        // Handle WebSocket events
+        socket.onopen = function (event) {
+            console.log('WebSocket connection opened');
+        };
+
+        socket.onmessage = function (event) {
+            console.log('Message received from server:', event.data);
+        };
+
+        socket.onclose = function (event) {
+            console.log('WebSocket connection closed');
+        };
+
+        socket.onerror = function (error) {
+            console.error('WebSocket error:', error);
+        };
+        function sendCommand(url) {
+            fetch(url)
+                .then(response => response.json()) // Assuming the response is JSON
+                .then(data => {
+                    // Handle the data returned by the API
+                    console.log('API response:', data);
+                })
+                .catch(error => {
+                    // Handle errors during the API call
+                    console.error("Error during API call:", error);
+                });
+        }
+        const sleepBtn = document.getElementById('sleep');
+        const resetBtn = document.getElementById('reset');
+
+        // Add a click event listener to the button
+        sleepBtn.addEventListener('click', function () {
+            // This function will be executed when the button is clicked
+            sendCommand('/set?sleep=1')
+        });
+        // Add a click event listener to the button
+        resetBtn.addEventListener('click', function () {
+            // This function will be executed when the button is clicked
+            sendCommand('/set?reset=1')
+        });
+
+        if (!!window.EventSource) {
+            const source = new EventSource('/events');
+
+            source.addEventListener('open', function (e) {
+                console.log('Events Connected');
+            }, false);
+            source.addEventListener('error', function (e) {
+                if (e.target.readyState !== EventSource.OPEN) {
+                    console.log('Events Disconnected');
+                }
+            }, false);
+
+            source.addEventListener('message', function (e) {
+
+            }, false);
+
+            source.addEventListener('shutdown', function (e) {
+                console.log('shutdown', e.data);
+                document.getElementById('text').innerHTML = e.data;
+            }, false);
+        }
+    </script>
+</body>
+<footer>
+    <p style='text-align: center; margin-top: 20px; color: #ffffff;'>Made by Subham :)</p>
+</footer>
+
+</html>

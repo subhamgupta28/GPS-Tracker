@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Leaflet to Image</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/dom-to-image@2.6.0/dist/dom-to-image.min.js"></script>
+</head>
+
+<body>
+    <script>
+        const createMapImage = async () => {
+            const width = 536;
+            const height = 240;
+
+            const mapElement = document.createElement("div");
+            mapElement.style.width = `${width}px`;
+            mapElement.style.height = `${height}px`;
+            document.body.appendChild(mapElement);
+
+            const map = L.map(mapElement, {
+                attributionControl: false,
+                zoomControl: false,
+                fadeAnimation: false,
+                zoomAnimation: false
+            }).setView([17.403016, 78.330997], 16);
+
+            const tileLayer = L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            );
+
+            const gmap = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            }).addTo(map);
+
+            L.marker([17.403016, 78.330997]).addTo(map);
+
+            L.circle([17.403016, 78.330997], {
+                color: "red",
+                fillColor: "#f03",
+                fillOpacity: 0.5,
+                radius: 5
+            }).addTo(map);
+
+            // L.polygon([
+            //   [51.509, -0.08],
+            //   [51.503, -0.06],
+            //   [51.51, -0.047]
+            // ]).addTo(map);
+
+            await new Promise((resolve) => gmap.on("load", () => resolve()));
+            const dataURL = await domtoimage.toJpeg(mapElement, { width, height });
+            document.body.removeChild(mapElement);
+            console.log(dataURL);
+
+            const imgElement = document.createElement("img");
+            imgElement.src = dataURL;
+            document.body.appendChild(imgElement);
+        };
+
+        createMapImage();
+    </script>
+</body>
+
+</html>

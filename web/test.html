@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaflet Routing</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <!-- Leaflet Routing Machine CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Leaflet Routing Machine JavaScript -->
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+</head>
+<body>
+  <div id="map" style="height: 400px;"></div>
+
+  <script>
+    // Your starting and ending coordinates
+    var startCoords = [51.505, -0.09]; // Replace with your actual starting coordinates
+    var endCoords = [51.515, -0.1];   // Replace with your actual ending coordinates
+
+    // Initialize the map
+    var map = L.map('map').setView(startCoords, 13);
+
+    // Add the OpenStreetMap layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Create a routing control and add it to the map
+    L.Routing.control({
+      waypoints: [
+        L.latLng(startCoords),
+        L.latLng(endCoords)
+      ],
+      routeWhileDragging: true
+    }).addTo(map);
+  </script>
+</body>
+</html>
